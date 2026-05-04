@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 const App = () => {
   console.log("App rendered");
@@ -29,10 +29,17 @@ const App = () => {
   num_comments: 60
   }
   ];
-  const [searchTerm, setSearchTerm] = useState("");
+  const [searchTerm, setSearchTerm] = useState(
+  localStorage.getItem("search") || ""
+  );
   const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
+    const value = event.target.value;
+    setSearchTerm(value);
   };
+  useEffect(() => {
+    localStorage.setItem("search", searchTerm);
+  }, [searchTerm]);
+
   const filteredStories = stories.filter((story) =>
   story.title.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -40,9 +47,10 @@ const App = () => {
   return (
     <div>
       <h1>Hacker News Stories</h1>
-      <List stories={filteredStories} />
       <Header />
-      <Search onSearch={handleSearch}/>
+      <Search onSearch={handleSearch} searchTerm={searchTerm}/>
+      <List stories={filteredStories} />
+      
     </div>
   );
 };
@@ -60,12 +68,8 @@ const List = ({ stories }) => {
     </div>
   );
 };
-const Search = ({ onSearch }) => {
+const Search = ({ onSearch, searchTerm }) => {
   console.log("Search rendered");
-  const handleChange = (event) => {
-    console.log(event.target.value);
-    console.log("User is typing...");
-  };
 
   return (
     <div>
@@ -73,6 +77,7 @@ const Search = ({ onSearch }) => {
       <input
         type="text"
         id="search"
+        value={searchTerm}
         onChange={onSearch}
       />
     </div>
@@ -90,13 +95,14 @@ const Item = ({ story }) => {
   );
 };
 /*
-1. Props vs State:
-Props = passed data
-State = internal, changeable data
+Lab 7 Reflection
 
-2. Why lift state?
-To share data between components
+1. Controlled component:
+An input whose value is controlled by React state.
 
-3. Where filtering?
-Inside App (central logic)
+2. Side effect:
+An operation outside rendering (like saving to localStorage).
+
+3. Why useEffect:
+To run code when state changes instead of during rendering.
 */

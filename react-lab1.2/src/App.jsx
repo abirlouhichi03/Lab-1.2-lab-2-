@@ -1,36 +1,22 @@
 import { useState, useEffect } from "react";
 
+
+const API_ENDPOINT = "https://hn.algolia.com/api/v1/search?query=";
+
 const App = () => {
   console.log("App rendered");
 
-  const initialStories = [
-    {
-      objectID: 1,
-      title: "React is Awesome",
-      url: "https://react.dev",
-      author: "Dan",
-      points: 120,
-      num_comments: 45
-    },
-    {
-      objectID: 2,
-      title: "JavaScript Tips",
-      url: "https://developer.mozilla.org",
-      author: "Sarah",
-      points: 80,
-      num_comments: 500
-    },
-    {
-      objectID: 3,
-      title: "AI is the Future",
-      url: "https://openai.com",
-      author: "John",
-      points: 200,
-      num_comments: 60
-    }
-  ];
 
-  const [stories, setStories] = useState(initialStories);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isError, setIsError] = useState(false);
+
+  
+  const [url, setUrl] = useState(
+    API_ENDPOINT + (localStorage.getItem("search") || "react")
+  );
+
+ 
+  const [stories, setStories] = useState([]);
 
   const [searchTerm, setSearchTerm] = useState(
     localStorage.getItem("search") || ""
@@ -44,7 +30,32 @@ const App = () => {
     localStorage.setItem("search", searchTerm);
   }, [searchTerm]);
 
+  
+  useEffect(() => {
+    
+    if (!url) return;
 
+    setIsLoading(true);
+    setIsError(false);
+
+    fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        setStories(data.hits); 
+        setIsLoading(false);
+      })
+      .catch(() => {
+        setIsError(true);
+        setIsLoading(false);
+      });
+  }, [url]); 
+
+  
+  const handleSubmit = () => {
+    setUrl(API_ENDPOINT + searchTerm);
+  };
+
+  
   const handleRemoveStory = (item) => {
     const newStories = stories.filter(
       (story) => story.objectID !== item.objectID
@@ -52,15 +63,10 @@ const App = () => {
     setStories(newStories);
   };
 
-  const filteredStories = stories.filter((story) =>
-    story.title.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
   return (
     <div>
       <Header />
 
-      
       <InputWithLabel
         id="search"
         value={searchTerm}
@@ -69,8 +75,24 @@ const App = () => {
         <strong>Search:</strong>
       </InputWithLabel>
 
+     
+      <button
+        type="button"
+        disabled={!searchTerm} 
+        onClick={handleSubmit}
+      >
+        Submit
+      </button>
+
+     
+      {isError && <p>Something went wrong...</p>}
+
       
-      <List stories={filteredStories} onRemoveItem={handleRemoveStory} />
+      {isLoading ? (
+        <p>Loading ...</p>
+      ) : (
+        <List stories={stories} onRemoveItem={handleRemoveStory} />
+      )}
     </div>
   );
 };
@@ -79,8 +101,6 @@ export default App;
 
 
 const List = ({ stories, onRemoveItem }) => {
-  console.log("List rendered");
-
   return (
     <div>
       {stories.map((story) => (
@@ -95,17 +115,12 @@ const List = ({ stories, onRemoveItem }) => {
 };
 
 
-const InputWithLabel = ({
-  id,
-  value,
-  onInputChange,
-  children
-}) => {
+const InputWithLabel = ({ id, value, onInputChange, children }) => {
   return (
     <div>
       <label htmlFor={id}>{children}</label>
       <input
-        type="text" 
+        type="text"
         id={id}
         value={value}
         onChange={onInputChange}
@@ -120,8 +135,6 @@ const Header = () => {
 
 
 const Item = ({ story, onRemoveItem }) => {
-  console.log("Item rendered");
-
   return (
     <div>
       <p>{story.title}</p>
@@ -134,14 +147,15 @@ const Item = ({ story, onRemoveItem }) => {
 };
 
 /*
-Lab 8 Reflection
+Lab 9 Reflection
 
-1. Reusable component:
-A component that can be used in different contexts by passing props instead of hard-coded values.
+1. Why use useEffect for fetching?
+To run asynchronous operations after rendering and control when they execute.
 
-2. Component composition:
-Using components inside other components via children.
+2. Difference between loading and error:
+Loading = waiting for data
+Error = something failed during fetch
 
-3. Why pass handlers:
-Because state is managed in parent, but actions happen in child components.
+3. Why control fetching?
+To avoid unnecessary API calls and improve performance.
 */
